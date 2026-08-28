@@ -1,0 +1,16 @@
+environment,body,variable,best_episode_holdout_r2,notes
+UMaze,agent,position,0.997,single-frame DINO readout
+UMaze,agent,velocity,0.964,first temporal difference
+UMaze,agent,acceleration,0.897,second temporal difference
+Wall,agent,position,0.843,single-frame DINO readout
+Wall,agent,velocity,0.673,first temporal difference
+Wall,agent,acceleration,0.511,second temporal difference
+PushT,pusher,position,0.928,single-frame DINO readout
+PushT,pusher,velocity,0.725,first temporal difference
+PushT,pusher,acceleration,0.574,second temporal difference
+PushT,block,position,0.963,single-frame DINO readout
+PushT,block,velocity,0.680,first temporal difference
+PushT,block,acceleration,0.420,second temporal difference
+PushT,block,orientation,0.843,cosine-sine target
+PushT,block,angular_velocity,0.120,first temporal difference
+PushT,block,angular_acceleration,0.049,second temporal difference

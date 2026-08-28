@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# Large, reproducible artifacts
+*.pth
+*.pt
+*.tar
+*.zip
+*.npy
+*.npz
+*.download
+activation_cache*/
+*_probe_results/
+*_layerwise_probe_runs/
+
+# Generated tables and plots outside the curated results directory
+output/
+outputs/

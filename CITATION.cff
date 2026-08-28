@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+title: Probing Physical Variables in Visual World Models
+message: If you use these notebooks or probe utilities, please cite this repository.
+type: software
+authors:
+  - family-names: Hacobian
+    given-names: Daniel
+repository-code: https://github.com/danielhacobian/probing-VLMs
+license: MIT
+date-released: 2026-08-27

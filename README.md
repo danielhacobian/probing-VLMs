@@ -17,7 +17,7 @@ model uses that variable.
 | Environment | Demo | Coverage |
 |---|---|---|
 | UMaze | [Open in Colab](https://colab.research.google.com/github/danielhacobian/probing-VLMs/blob/initial-release/notebooks/umaze_layerwise_motion_probe_paper_lr.ipynb) | 2,000 unique trajectories |
-| Wall | [Open in Colab](https://colab.research.google.com/github/danielhacobian/probing-VLMs/blob/initial-release/notebooks/wall_layerwise_motion_probe_walkthrough_standalone.ipynb#scrollTo=ZhPBxdYfc5DH) | 1,920 unique trajectories |
+| Wall | [Open in Colab](https://colab.research.google.com/github/danielhacobian/probing-VLMs/blob/initial-release/notebooks/wall_layerwise_motion_probe_walkthrough_standalone.ipynb) | 1,920 unique trajectories |
 | PushT | [Open in Colab](https://colab.research.google.com/github/danielhacobian/probing-VLMs/blob/initial-release/notebooks/pusht_layerwise_motion_probe_walkthrough_standalone.ipynb) | 18,500 unique trajectories |
 
 The notebooks are the main demos and include explanations, activation

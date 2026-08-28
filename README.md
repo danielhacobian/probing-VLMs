@@ -79,11 +79,16 @@ These commands download only from `probing-VLMs` releases.
 
 ## Reproducibility notes
 
-- All splits are grouped by complete trajectory.
+- Complete trajectories are split 60/20/20 into training, validation, and a
+  locked test partition.
 - One deterministic window is selected per trajectory with seed 0.
 - OFF and ON conditions use identical windows, labels, splits, and probes.
-- Notebook outputs are descriptive for one frozen checkpoint per condition.
-- Bootstrap bands capture held-out-row sampling, not training-seed uncertainty.
+- Layer/readout selection uses validation trajectories; the selected probe is
+  evaluated once on locked test trajectories.
+- Headline values use 1,000 complete-trajectory-window bootstrap resamples and
+  report 95% percentile intervals.
+- Notebook outputs currently cover one frozen training seed per condition;
+  bootstrap intervals do not measure training-seed uncertainty.
 - UMaze and Wall predictor-action inputs retain the documented legacy-padding
   limitation; encoder and projected-readout results are unaffected.
 

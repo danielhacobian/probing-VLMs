@@ -183,6 +183,55 @@ def episode_group_split(choices, test_fraction: float = 0.2, seed: int = 0):
     return train, test
 
 
+def episode_group_train_val_test_split(
+    choices,
+    validation_fraction: float = 0.2,
+    test_fraction: float = 0.2,
+    seed: int = 0,
+):
+    """Make disjoint train/validation/test partitions of complete trajectories.
+
+    The permutation is deterministic. Validation episodes are taken first and
+    test episodes second, so the validation partition matches the historical
+    80/20 episode holdout when both fractions are 0.2. No episode can appear in
+    more than one partition, even when there are multiple windows per episode.
+    """
+    choices = np.asarray(choices, dtype=np.int64)
+    if choices.ndim != 2 or choices.shape[1] < 1:
+        raise ValueError("choices must contain [episode, start] rows")
+    if not 0.0 < validation_fraction < 1.0 or not 0.0 < test_fraction < 1.0:
+        raise ValueError("validation_fraction and test_fraction must be in (0, 1)")
+    if validation_fraction + test_fraction >= 1.0:
+        raise ValueError("validation and test fractions must leave training episodes")
+    episodes = np.unique(choices[:, 0])
+    if len(episodes) < 3:
+        raise ValueError("train/validation/test evaluation requires at least three episodes")
+    shuffled = np.random.default_rng(seed).permutation(episodes)
+    n_validation = max(1, int(math.ceil(validation_fraction * len(episodes))))
+    n_test = max(1, int(math.ceil(test_fraction * len(episodes))))
+    if n_validation + n_test >= len(episodes):
+        n_test = 1
+        n_validation = 1
+    validation_episodes = set(shuffled[:n_validation].tolist())
+    test_episodes = set(shuffled[n_validation : n_validation + n_test].tolist())
+    train_episodes = set(shuffled[n_validation + n_test :].tolist())
+
+    def rows_for(group):
+        return np.asarray(
+            [i for i, episode in enumerate(choices[:, 0]) if episode in group],
+            dtype=np.int64,
+        )
+
+    train, validation, test = (
+        rows_for(train_episodes),
+        rows_for(validation_episodes),
+        rows_for(test_episodes),
+    )
+    if not len(train) or not len(validation) or not len(test):
+        raise ValueError("trajectory split produced an empty partition")
+    return train, validation, test
+
+
 def spatial_holdout_split(
     anchor_position: np.ndarray,
     axis: int = 1,
@@ -312,6 +361,351 @@ def bootstrap_metric_ci(truth, prediction, metric="r2", repeats=1000, seed=0):
         else:
             raise ValueError(f"unsupported metric {metric!r}")
     return np.quantile(values, [0.025, 0.975]).tolist()
+
+
+def fit_probe_grouped(features, labels, train_idx, evaluation_idx, ridge: float = 10.0):
+    """Fit once and return predictions grouped by complete evaluation windows.
+
+    Each list element contains all valid temporal rows from one trajectory
+    window. Keeping this boundary intact lets the bootstrap resample complete
+    windows instead of treating adjacent frames as independent observations.
+    """
+    features = np.asarray(features)
+    labels = np.asarray(labels)
+    x_train, y_train = _flatten_valid(features, labels, np.asarray(train_idx))
+    x_mean = x_train.mean(0, keepdims=True)
+    x_std = x_train.std(0, keepdims=True)
+    x_std[x_std < 1e-6] = 1.0
+    xs = (x_train - x_mean) / x_std
+    y = y_train[:, None] if y_train.ndim == 1 else y_train
+    y_mean = y.mean(0, keepdims=True)
+    yc = y - y_mean
+    n, d = xs.shape
+    if d <= n:
+        weight = np.linalg.solve(xs.T @ xs + ridge * np.eye(d), xs.T @ yc)
+    else:
+        weight = xs.T @ np.linalg.solve(xs @ xs.T + ridge * np.eye(n), yc)
+
+    truth_groups, prediction_groups = [], []
+    for window in np.asarray(evaluation_idx, dtype=np.int64):
+        x = features[window].reshape(-1, features.shape[-1])
+        target = labels[window]
+        target = target.reshape(-1, *target.shape[1:])
+        finite = np.isfinite(x).all(axis=-1)
+        finite &= (
+            np.isfinite(target).all(axis=-1)
+            if target.ndim > 1
+            else np.isfinite(target)
+        )
+        if not finite.any():
+            continue
+        prediction = ((x[finite] - x_mean) / x_std) @ weight + y_mean
+        prediction = prediction[:, 0] if target[finite].ndim == 1 else prediction
+        truth_groups.append(target[finite])
+        prediction_groups.append(prediction)
+    if not truth_groups:
+        raise ValueError("evaluation partition contains no finite target rows")
+    return truth_groups, prediction_groups, weight
+
+
+def group_flat_predictions_by_window(
+    features,
+    labels,
+    evaluation_idx,
+    truth,
+    prediction,
+):
+    """Recover complete-window groups from aligned flattened predictions."""
+    features = np.asarray(features)
+    labels = np.asarray(labels)
+    truth = np.asarray(truth)
+    prediction = np.asarray(prediction)
+    truth_groups, prediction_groups = [], []
+    offset = 0
+    for window in np.asarray(evaluation_idx, dtype=np.int64):
+        x = features[window].reshape(-1, features.shape[-1])
+        target = labels[window].reshape(-1, *labels[window].shape[1:])
+        finite = np.isfinite(x).all(axis=-1)
+        finite &= (
+            np.isfinite(target).all(axis=-1)
+            if target.ndim > 1
+            else np.isfinite(target)
+        )
+        count = int(finite.sum())
+        if count:
+            truth_groups.append(truth[offset : offset + count])
+            prediction_groups.append(prediction[offset : offset + count])
+            offset += count
+    if offset != len(truth) or offset != len(prediction):
+        raise ValueError("flattened predictions do not match complete-window validity masks")
+    return truth_groups, prediction_groups
+
+
+def grouped_metric(truth_groups, prediction_groups, metric="r2", group_indices=None):
+    """Score concatenated rows after selecting whole trajectory windows."""
+    if group_indices is None:
+        group_indices = np.arange(len(truth_groups))
+    truth = np.concatenate([truth_groups[int(i)] for i in group_indices], axis=0)
+    prediction = np.concatenate(
+        [prediction_groups[int(i)] for i in group_indices], axis=0
+    )
+    if metric == "r2":
+        return r2_score(truth, prediction)
+    if metric == "rmse":
+        return float(np.sqrt(np.mean(np.square(truth - prediction))))
+    if metric == "mae":
+        return float(np.mean(np.abs(truth - prediction)))
+    if metric == "cosine":
+        return direction_scores(truth, prediction)["cosine"]
+    if metric == "angular_mae_deg":
+        return direction_scores(truth, prediction)["angular_mae_deg"]
+    raise ValueError(f"unsupported grouped metric {metric!r}")
+
+
+def trajectory_bootstrap_metric_ci(
+    truth_groups,
+    prediction_groups,
+    metric="r2",
+    repeats: int = 1000,
+    seed: int = 0,
+):
+    """Return a 95% percentile interval from complete-window resamples."""
+    if len(truth_groups) != len(prediction_groups) or not truth_groups:
+        raise ValueError("truth and prediction groups must be non-empty and aligned")
+    rng = np.random.default_rng(seed)
+    count = len(truth_groups)
+    values = np.empty(repeats, dtype=np.float64)
+    for repeat in range(repeats):
+        sampled = rng.integers(0, count, count)
+        values[repeat] = grouped_metric(
+            truth_groups, prediction_groups, metric, sampled
+        )
+    return np.quantile(values, [0.025, 0.975]).tolist()
+
+
+def grouped_regression_summary(
+    truth_groups,
+    prediction_groups,
+    repeats: int = 1000,
+    seed: int = 0,
+):
+    """Point estimates and trajectory-bootstrap intervals for headline values."""
+    result = {"test_trajectories": len(truth_groups)}
+    for offset, metric in enumerate(("r2", "rmse", "mae")):
+        result[metric] = grouped_metric(truth_groups, prediction_groups, metric)
+        low, high = trajectory_bootstrap_metric_ci(
+            truth_groups,
+            prediction_groups,
+            metric,
+            repeats=repeats,
+            seed=seed + offset,
+        )
+        result[f"{metric}_ci_low"] = low
+        result[f"{metric}_ci_high"] = high
+    return result
+
+
+def paired_trajectory_bootstrap_difference_ci(
+    first_truth_groups,
+    first_prediction_groups,
+    second_truth_groups,
+    second_prediction_groups,
+    metric="r2",
+    repeats: int = 1000,
+    seed: int = 0,
+):
+    """Bootstrap a paired second-minus-first metric difference by trajectory."""
+    counts = {
+        len(first_truth_groups), len(first_prediction_groups),
+        len(second_truth_groups), len(second_prediction_groups),
+    }
+    if len(counts) != 1 or not first_truth_groups:
+        raise ValueError("paired trajectory groups must be non-empty and aligned")
+    count = counts.pop()
+    rng = np.random.default_rng(seed)
+    values = np.empty(repeats, dtype=np.float64)
+    for repeat in range(repeats):
+        sampled = rng.integers(0, count, count)
+        first = grouped_metric(
+            first_truth_groups, first_prediction_groups, metric, sampled
+        )
+        second = grouped_metric(
+            second_truth_groups, second_prediction_groups, metric, sampled
+        )
+        values[repeat] = second - first
+    return np.quantile(values, [0.025, 0.975]).tolist()
+
+
+def select_then_test_representations(
+    representations_by_condition,
+    targets,
+    align_fn,
+    specs_fn,
+    train_idx,
+    validation_idx,
+    test_idx,
+    ridge: float = 10.0,
+    bootstrap_repeats: int = 1000,
+    seed: int = 0,
+    model_seed: int = 0,
+):
+    """Select layer/readout on validation trajectories, then test it once.
+
+    ``specs_fn(family, representation)`` supplies the target/mode candidates
+    valid for a representation. One shared candidate is selected for each
+    representation family and target by averaging its validation R² across
+    conditions. The same layer, readout, and temporal construction is therefore
+    tested for OFF and ON. Test labels are not accessed until all selections are
+    fixed. Returned test intervals resample complete trajectory windows, and
+    OFF/ON differences use paired trajectory resamples.
+    """
+    validation_rows = []
+    aligned = {}
+    for condition, representations in representations_by_condition.items():
+        for name, representation in sorted(representations.items()):
+            family, layer, kind = name.split("/", 2)
+            for variable, mode in specs_fn(family, representation):
+                features, labels, _ = align_fn(
+                    representation, targets, variable, mode
+                )
+                truth_groups, prediction_groups, _ = fit_probe_grouped(
+                    features, labels, train_idx, validation_idx, ridge
+                )
+                row = {
+                    "condition": condition,
+                    "model_seed": model_seed,
+                    "family": family,
+                    "variable": variable,
+                    "representation": name,
+                    "layer": int(layer),
+                    "kind": kind,
+                    "mode": mode,
+                    "validation_r2": grouped_metric(
+                        truth_groups, prediction_groups, "r2"
+                    ),
+                    "validation_trajectories": len(truth_groups),
+                }
+                validation_rows.append(row)
+                aligned[(condition, name, variable, mode)] = (features, labels)
+
+    conditions = tuple(sorted(representations_by_condition))
+    candidate_groups = {}
+    for row in validation_rows:
+        key = (
+            row["family"], row["variable"], row["representation"], row["mode"]
+        )
+        candidate_groups.setdefault(key, []).append(row)
+    shared_winners = {}
+    for candidate_key, rows in candidate_groups.items():
+        if {row["condition"] for row in rows} != set(conditions):
+            continue
+        family, variable, _, _ = candidate_key
+        mean_score = float(np.mean([row["validation_r2"] for row in rows]))
+        winner_key = (family, variable)
+        if (
+            winner_key not in shared_winners
+            or mean_score > shared_winners[winner_key][0]
+        ):
+            shared_winners[winner_key] = (mean_score, rows)
+    selected = {}
+    selected_candidates = set()
+    for (family, variable), (mean_score, rows) in shared_winners.items():
+        selected_candidates.add(
+            (family, variable, rows[0]["representation"], rows[0]["mode"])
+        )
+        for row in rows:
+            selected[(row["condition"], family, variable)] = {
+                **row,
+                "selection_mean_validation_r2": mean_score,
+                "selection_scope": "shared_across_conditions",
+            }
+    for row in validation_rows:
+        row["selected"] = (
+            row["family"], row["variable"], row["representation"], row["mode"]
+        ) in selected_candidates
+
+    development_idx = np.sort(
+        np.concatenate([np.asarray(train_idx), np.asarray(validation_idx)])
+    )
+    headline_rows = []
+    test_groups = {}
+    for key, selection in sorted(selected.items()):
+        condition, family, variable = key
+        features, labels = aligned[
+            (condition, selection["representation"], variable, selection["mode"])
+        ]
+        truth_groups, prediction_groups, _ = fit_probe_grouped(
+            features, labels, development_idx, test_idx, ridge
+        )
+        summary = grouped_regression_summary(
+            truth_groups,
+            prediction_groups,
+            repeats=bootstrap_repeats,
+            seed=seed,
+        )
+        headline_rows.append({
+            **{
+                name: value for name, value in selection.items()
+                if name not in (
+                    "validation_r2",
+                    "validation_trajectories",
+                    "selection_mean_validation_r2",
+                )
+            },
+            **summary,
+            "selection_split": "validation_trajectories",
+            "evaluation_split": "locked_test_trajectories",
+            "bootstrap_unit": "complete_trajectory_window",
+            "interval": "95_percentile",
+        })
+        test_groups[key] = (truth_groups, prediction_groups)
+
+    delta_rows = []
+    comparable = sorted({
+        (row["family"], row["variable"])
+        for row in headline_rows
+        if ("off", row["family"], row["variable"]) in test_groups
+        and ("on", row["family"], row["variable"]) in test_groups
+    })
+    lookup = {
+        (row["condition"], row["family"], row["variable"]): row
+        for row in headline_rows
+    }
+    for offset, (family, variable) in enumerate(comparable):
+        off_key, on_key = ("off", family, variable), ("on", family, variable)
+        off_truth, off_prediction = test_groups[off_key]
+        on_truth, on_prediction = test_groups[on_key]
+        low, high = paired_trajectory_bootstrap_difference_ci(
+            off_truth,
+            off_prediction,
+            on_truth,
+            on_prediction,
+            metric="r2",
+            repeats=bootstrap_repeats,
+            seed=seed + offset,
+        )
+        off_row, on_row = lookup[off_key], lookup[on_key]
+        delta_rows.append({
+            "model_seed": model_seed,
+            "family": family,
+            "variable": variable,
+            "off_representation": off_row["representation"],
+            "off_mode": off_row["mode"],
+            "on_representation": on_row["representation"],
+            "on_mode": on_row["mode"],
+            "off_r2": off_row["r2"],
+            "off_r2_ci_low": off_row["r2_ci_low"],
+            "off_r2_ci_high": off_row["r2_ci_high"],
+            "on_r2": on_row["r2"],
+            "on_r2_ci_low": on_row["r2_ci_low"],
+            "on_r2_ci_high": on_row["r2_ci_high"],
+            "on_minus_off_r2": on_row["r2"] - off_row["r2"],
+            "on_minus_off_r2_ci_low": low,
+            "on_minus_off_r2_ci_high": high,
+            "bootstrap_unit": "paired_complete_trajectory_window",
+            "interval": "95_percentile",
+        })
+    return validation_rows, headline_rows, delta_rows
 
 
 def readability_onset(rows, value_key, control_key, consecutive=2, fraction_of_peak=0.5):

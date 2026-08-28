@@ -10,8 +10,8 @@ predictor is evaluated separately through its pooled visual-token channels.
 If a cached readout has shape `[window, time, feature] = [N, T, D]`, a
 single-frame probe receives `N*T` rows of `D` features. A first-difference probe
 receives `N*(T-1)` rows, and a second-difference probe receives `N*(T-2)` rows.
-Window membership is retained until after the train/test split so frames from a
-held-out trajectory cannot leak into training.
+Window membership is retained through the train/validation/test split so
+frames from one trajectory cannot cross partitions.
 
 ## Targets
 
@@ -34,18 +34,31 @@ readout, target, feature construction, condition, and split receives its own
 probe. The main regression metric is held-out R-squared; RMSE and MAE are also
 recorded. Direction uses mean cosine similarity and angular error.
 
-## Splits and controls
+## Selection, testing, and controls
 
-The episode split holds out complete trajectories. The spatial split fits away
-from a region and evaluates inside that region, with a buffer between them.
-Wall includes a doorway-specific holdout. Controls include shuffled targets, a
-position-only model, and motion targets residualized against position.
+Complete trajectories are divided into 60% training, 20% validation, and 20%
+locked test partitions. Exploratory layer curves and spatial/doorway checks use
+development data only. For each target and model family, the layer, readout,
+and temporal feature construction with the highest mean validation R-squared
+across OFF and ON is selected. The same choice is used for both conditions,
+then fixed before each ridge probe is refit on
+training plus validation trajectories and evaluated once on locked test
+trajectories. Controls include shuffled targets, a position-only model, and
+motion targets residualized against position.
 
-The notebooks show 2.5th--97.5th percentile intervals from 300 bootstrap
-resamples of held-out prediction rows. These bands do not measure variation
-across checkpoint training seeds, and rows from the same trajectory window are
-not independent. They should therefore be read as descriptive probe-sampling
-uncertainty.
+Every confirmatory R-squared, RMSE, MAE, and ON-minus-OFF value has a
+2.5th--97.5th percentile interval from 1,000 test resamples. The sampling unit
+is a complete trajectory window: all frames from a sampled window remain
+together. OFF and ON differences use paired trajectory resamples. These
+intervals measure test-trajectory sampling uncertainty, not variation across
+checkpoint training seeds. The current assets contain model-training seed 0;
+additional seeds require independently trained OFF and ON checkpoints.
+When matching checkpoints for more seeds are available, the confirmatory block
+should be run independently for each seed while preserving `model_seed` in the
+exported rows. Report each seed, the across-seed mean and standard deviation,
+and paired OFF/ON differences within seed. Three seeds would require two
+additional OFF and two additional ON training runs for each environment (12
+new model trainings across UMaze, Wall, and PushT).
 
 ## Interpretation boundary
 

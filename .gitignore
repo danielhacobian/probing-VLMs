@@ -7,6 +7,7 @@ venv/
 
 # Large, reproducible artifacts
 *.pth
+*.pth.part-*
 *.pt
 *.tar
 *.zip

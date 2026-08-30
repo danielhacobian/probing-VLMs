@@ -57,7 +57,8 @@ For a representation at layer `l`:
 Each representation is standardized using training statistics only. Ridge
 regression uses `lambda=10`. Evaluation includes episode holdouts, buffered
 spatial holdouts, shuffled labels, position-only controls, position-residualized
-targets, and bootstrap intervals. See [Methodology](docs/methodology.md).
+targets, and 1,000 complete-trajectory-window bootstrap resamples for every
+reported interval. See [Methodology](docs/methodology.md).
 
 ## Local use
 
@@ -76,6 +77,21 @@ python scripts/fetch_probe_assets.py wall
 ```
 
 These commands download only from `probing-VLMs` releases.
+
+## Result exports
+
+Each notebook writes `validation_selection_scores.csv`,
+`headline_selected_test_metrics.csv`,
+`headline_straightening_deltas.csv`, and `headline_protocol.json`. The combined
+exports are committed under [`results/`](results/). After rerunning all three
+notebooks, refresh them with:
+
+```bash
+python scripts/collect_headline_exports.py \
+  --umaze <UMAZE_OUTPUT_DIR> \
+  --wall <WALL_OUTPUT_DIR> \
+  --pusht <PUSHT_OUTPUT_DIR>
+```
 
 ## Reproducibility notes
 

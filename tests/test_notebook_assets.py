@@ -1,3 +1,4 @@
+import csv
 import json
 from pathlib import Path
 
@@ -27,3 +28,40 @@ def test_checkpoint_manifests_exist():
             assert (
                 ROOT / "artifacts" / "checkpoints" / directory / condition / checksum
             ).is_file()
+
+
+def test_notebook_confirmatory_protocol_is_consistent():
+    for path in sorted((ROOT / "notebooks").glob("*.ipynb")):
+        payload = json.loads(path.read_text())
+        source = "\n".join(
+            "".join(cell.get("source", [])) for cell in payload["cells"]
+        )
+        assert "episode_group_train_val_test_split" in source
+        assert "validation_fraction=0.2, test_fraction=0.2" in source
+        assert "HEADLINE_BOOTSTRAP_REPEATS = 1000" in source
+        assert "BOOTSTRAP_REPEATS = 300" not in source
+        assert "repeats=300" not in source
+        assert '"trajectory_split"' in source
+        for filename in (
+            "validation_selection_scores.csv",
+            "headline_selected_test_metrics.csv",
+            "headline_straightening_deltas.csv",
+            "headline_protocol.json",
+        ):
+            assert filename in source
+
+
+def test_committed_headline_exports_are_present_and_nonempty():
+    for filename in (
+        "validation_selection_scores.csv",
+        "headline_selected_test_metrics.csv",
+        "headline_straightening_deltas.csv",
+    ):
+        path = ROOT / "results" / filename
+        assert path.is_file()
+        with path.open(newline="") as handle:
+            assert list(csv.DictReader(handle))
+
+    protocol = json.loads((ROOT / "results" / "headline_protocol.json").read_text())
+    assert protocol["protocol_version"] == "trajectory_grouped_60_20_20_v1"
+    assert protocol["bootstrap"]["repeats"] == 1000

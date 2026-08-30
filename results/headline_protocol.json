@@ -1,0 +1,36 @@
+{
+  "protocol_version": "trajectory_grouped_60_20_20_v1",
+  "selection_split": "validation_trajectories",
+  "evaluation_split": "locked_test_trajectories",
+  "test_policy": "selected representation evaluated once after refitting on train+validation",
+  "bootstrap": {
+    "unit": "complete_trajectory_window",
+    "repeats": 1000,
+    "interval": "95_percentile"
+  },
+  "model_training_seeds": [
+    0
+  ],
+  "split_windows": {
+    "umaze": {
+      "train": 1200,
+      "validation": 400,
+      "test": 400
+    },
+    "wall": {
+      "train": 1152,
+      "validation": 384,
+      "test": 384
+    },
+    "pusht": {
+      "train": 11100,
+      "validation": 3700,
+      "test": 3700
+    }
+  },
+  "committed_exports": {
+    "headline_selected_test_metrics.csv": "complete selected-test R2 and 95% intervals recovered from saved confirmatory tables",
+    "headline_straightening_deltas.csv": "complete paired ON-minus-OFF R2 table recovered from saved confirmatory tables",
+    "validation_selection_scores.csv": "selected candidates are recorded; full candidate validation scores require notebook rerun"
+  }
+}

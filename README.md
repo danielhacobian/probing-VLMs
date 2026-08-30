@@ -41,9 +41,10 @@ tests/                     CPU-only tests for probe construction and assets
 
 Large files are intentionally stored as release assets rather than Git
 objects. Every downloaded checkpoint, dataset, and activation cache is checked
-against a recorded SHA-256 digest. Set `PROBING_VLMS_REPO_URL` to the clone URL
-of the anonymous repository and `PROBING_VLMS_RELEASE_BASE` to its
-`releases/download` URL before running in Colab. See
+against a recorded SHA-256 digest. Each notebook defines
+`PROBING_VLMS_REPO_URL` and `PROBING_VLMS_RELEASE_BASE` with working public
+defaults, so a fresh Colab runtime needs no environment setup. The variables
+can still be set before the setup cell to use a repository mirror. See
 [Data and artifacts](docs/data-and-artifacts.md).
 For double-blind distribution, also follow the
 [anonymous release checklist](docs/anonymous-release.md).
@@ -74,7 +75,7 @@ cd probing-VLMs
 python -m pip install -r requirements.txt
 ```
 
-For notebook and asset setup:
+Optional repository-mirror override:
 
 ```bash
 export PROBING_VLMS_REPO_URL=<ANONYMOUS_REPOSITORY_URL>

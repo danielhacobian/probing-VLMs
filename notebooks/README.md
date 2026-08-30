@@ -1,11 +1,11 @@
 # Notebook demos
 
 These notebooks are the primary entry points. Run them from top to bottom in a
-fresh Colab GPU runtime. Before running the setup cell, define
-`PROBING_VLMS_REPO_URL` and `PROBING_VLMS_RELEASE_BASE` for the anonymous
-repository mirror. Each setup cell then clones the `initial-release` branch,
-installs the environment-specific packages, and downloads only the assets that
-the selected demo needs.
+fresh Colab GPU runtime. Each setup cell defines working defaults for
+`PROBING_VLMS_REPO_URL` and `PROBING_VLMS_RELEASE_BASE`, clones the
+`initial-release` branch, installs the environment-specific packages, and
+downloads only the assets that the selected demo needs. Define either variable
+before the setup cell only when using a repository mirror.
 
 | Notebook | Default path | Large downloads | Recommended runtime |
 |---|---|---|---|

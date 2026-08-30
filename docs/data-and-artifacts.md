@@ -13,8 +13,9 @@ digests, and cache them only for the current runtime.
 | PushT | Original DINO-WM OSF archive | 18,500 selected from 18,706 available trajectories when recomputing activations |
 
 The notebooks contain the public OSF URLs and expected hashes. Repository-owned
-release URLs are constructed from `PROBING_VLMS_RELEASE_BASE`, so an anonymous
-mirror can host the same verified assets without embedding an author account.
+release URLs are constructed from `PROBING_VLMS_RELEASE_BASE`. The setup cells
+provide a working public default, while an anonymous mirror can override the
+variable and host the same verified assets.
 The original OSF record does not state a separate dataset license, so the
 repository does not relicense the trajectories.
 

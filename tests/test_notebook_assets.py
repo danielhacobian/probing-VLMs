@@ -6,16 +6,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_notebooks_are_anonymous_and_use_configurable_repository_urls():
+def test_notebooks_are_self_configuring_and_use_configurable_repository_urls():
     notebooks = sorted((ROOT / "notebooks").glob("*.ipynb"))
     assert len(notebooks) == 3
     for path in notebooks:
         payload = json.loads(path.read_text())
         text = json.dumps(payload)
-        assert not re.search(r"github\.com/[^/]+/probing-VLMs", text, re.I)
         assert not re.search(r"colab\.research\.google\.com/github/", text, re.I)
         assert "PROBING_VLMS_REPO_URL" in text
         assert "PROBING_VLMS_RELEASE_BASE" in text
+        assert "DEFAULT_REPO_URL" in text
+        assert "DEFAULT_RELEASE_BASE" in text
+        assert "https://github.com/danielhacobian/probing-VLMs.git" in text
+        assert "https://github.com/danielhacobian/probing-VLMs/releases/download" in text
         assert "temporal-straightening.git" not in text
         assert "temporal-straightening/releases" not in text
         assert "episode_group_train_val_test_split" in text

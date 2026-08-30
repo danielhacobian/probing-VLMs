@@ -1,0 +1,15 @@
+{
+  "protocol_version": "trajectory_grouped_60_20_20_v1",
+  "status": "awaiting_confirmatory_notebook_execution",
+  "selection_split": "validation_trajectories",
+  "evaluation_split": "locked_test_trajectories",
+  "bootstrap_unit": "complete_trajectory_window",
+  "bootstrap_repeats": 1000,
+  "interval": "95_percentile",
+  "required_environments": [
+    "umaze",
+    "wall",
+    "pusht"
+  ],
+  "collection_command": "python scripts/collect_headline_exports.py --umaze <UMAZE_OUTPUT_DIR> --wall <WALL_OUTPUT_DIR> --pusht <PUSHT_OUTPUT_DIR>"
+}

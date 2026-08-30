@@ -1,0 +1,1 @@
+environment,condition,model_seed,family,variable,representation,layer,kind,mode,selection_scope,test_trajectories,r2,r2_ci_low,r2_ci_high,rmse,rmse_ci_low,rmse_ci_high,mae,mae_ci_low,mae_ci_high,selection_split,evaluation_split,bootstrap_unit,interval

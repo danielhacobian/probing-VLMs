@@ -1,7 +1,9 @@
 # Notebook demos
 
 These notebooks are the primary entry points. Run them from top to bottom in a
-fresh Colab GPU runtime. Each setup cell clones the `initial-release` branch,
+fresh Colab GPU runtime. Before running the setup cell, define
+`PROBING_VLMS_REPO_URL` and `PROBING_VLMS_RELEASE_BASE` for the anonymous
+repository mirror. Each setup cell then clones the `initial-release` branch,
 installs the environment-specific packages, and downloads only the assets that
 the selected demo needs.
 
@@ -16,5 +18,5 @@ but that optional path requires verified OFF and ON checkpoints supplied through
 `PUSHT_CHECKPOINT_ROOT`. The default cache path is the supported standalone
 reproduction route and needs no private files or credentials.
 
-Notebook outputs may include paths from the machine on which an executed copy
-was produced. The source cells always set the current repository-owned paths.
+Committed notebooks contain no executed outputs or machine-specific paths.
+Fresh outputs are generated only in the active Colab runtime.

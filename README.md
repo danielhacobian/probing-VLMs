@@ -16,9 +16,9 @@ model uses that variable.
 
 | Environment | Demo | Coverage |
 |---|---|---|
-| UMaze | [Open in Colab](https://colab.research.google.com/github/danielhacobian/probing-VLMs/blob/initial-release/notebooks/umaze_layerwise_motion_probe_paper_lr.ipynb) | 2,000 unique trajectories |
-| Wall | [Open in Colab](https://colab.research.google.com/github/danielhacobian/probing-VLMs/blob/initial-release/notebooks/wall_layerwise_motion_probe_walkthrough_standalone.ipynb) | 1,920 unique trajectories |
-| PushT | [Open in Colab](https://colab.research.google.com/github/danielhacobian/probing-VLMs/blob/initial-release/notebooks/pusht_layerwise_motion_probe_walkthrough_standalone.ipynb) | 18,500 unique trajectories |
+| UMaze | [Notebook](notebooks/umaze_layerwise_motion_probe_paper_lr.ipynb) | 2,000 unique trajectories |
+| Wall | [Notebook](notebooks/wall_layerwise_motion_probe_walkthrough_standalone.ipynb) | 1,920 unique trajectories |
+| PushT | [Notebook](notebooks/pusht_layerwise_motion_probe_walkthrough_standalone.ipynb) | 18,500 unique trajectories |
 
 The notebooks are the main demos and include explanations, activation
 extraction, probe fitting, controls, uncertainty estimates, and plots. They
@@ -39,9 +39,14 @@ docs/                      Method and data documentation
 tests/                     CPU-only tests for probe construction and assets
 ```
 
-Large files are intentionally stored as GitHub Release assets rather than Git
+Large files are intentionally stored as release assets rather than Git
 objects. Every downloaded checkpoint, dataset, and activation cache is checked
-against a recorded SHA-256 digest. See [Data and artifacts](docs/data-and-artifacts.md).
+against a recorded SHA-256 digest. Set `PROBING_VLMS_REPO_URL` to the clone URL
+of the anonymous repository and `PROBING_VLMS_RELEASE_BASE` to its
+`releases/download` URL before running in Colab. See
+[Data and artifacts](docs/data-and-artifacts.md).
+For double-blind distribution, also follow the
+[anonymous release checklist](docs/anonymous-release.md).
 
 ## Core methodology
 
@@ -55,16 +60,25 @@ For a representation at layer `l`:
 - PushT orientation uses `(cos(theta), sin(theta))` to avoid an angle wrap.
 
 Each representation is standardized using training statistics only. Ridge
-regression uses `lambda=10`. Evaluation includes episode holdouts, buffered
-spatial holdouts, shuffled labels, position-only controls, position-residualized
-targets, and bootstrap intervals. See [Methodology](docs/methodology.md).
+regression uses `lambda=10`. Complete trajectories are divided into 60%
+training, 20% validation, and 20% locked test partitions. Representation
+selection uses validation only; final evaluation uses the test partition once.
+All plotted and headline uncertainty intervals use 1,000 complete-trajectory
+bootstrap resamples. See [Methodology](docs/methodology.md).
 
 ## Local use
 
 ```bash
-git clone --branch initial-release https://github.com/danielhacobian/probing-VLMs.git
+git clone --branch initial-release <ANONYMOUS_REPOSITORY_URL> probing-VLMs
 cd probing-VLMs
 python -m pip install -r requirements.txt
+```
+
+For notebook and asset setup:
+
+```bash
+export PROBING_VLMS_REPO_URL=<ANONYMOUS_REPOSITORY_URL>
+export PROBING_VLMS_RELEASE_BASE=<ANONYMOUS_RELEASE_DOWNLOAD_BASE>
 ```
 
 Checkpoint restoration is normally handled by the notebooks. It can also be
@@ -76,6 +90,24 @@ python scripts/fetch_probe_assets.py wall
 ```
 
 These commands download only from `probing-VLMs` releases.
+
+## Result exports
+
+Each notebook writes `validation_selection_scores.csv`,
+`headline_selected_test_metrics.csv`,
+`headline_straightening_deltas.csv`, and `headline_protocol.json`. After
+running all three notebooks, combine their exports with:
+
+```bash
+python scripts/collect_headline_exports.py \
+  --umaze <UMAZE_OUTPUT_DIR> \
+  --wall <WALL_OUTPUT_DIR> \
+  --pusht <PUSHT_OUTPUT_DIR>
+```
+
+The canonical schemas and protocol manifest are checked into
+[`results/`](results/). The collection script refuses empty input tables so
+unexecuted notebooks cannot be mistaken for reported measurements.
 
 ## Reproducibility notes
 

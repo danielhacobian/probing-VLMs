@@ -11,15 +11,22 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import urllib.request
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BASE = (
-    "https://github.com/danielhacobian/probing-VLMs/releases/download/"
-    "probe-checkpoints-v1"
-)
+RELEASE_BASE = os.environ.get("PROBING_VLMS_RELEASE_BASE", "").rstrip("/")
+
+
+def release_base() -> str:
+    if not RELEASE_BASE:
+        raise RuntimeError(
+            "Set PROBING_VLMS_RELEASE_BASE to the anonymous repository's "
+            "release-download base URL before restoring checkpoints."
+        )
+    return f"{RELEASE_BASE}/probe-checkpoints-v1"
 
 ASSETS = {
     "umaze": {
@@ -69,7 +76,7 @@ def restore(environment: str) -> None:
         for asset_name in suffixes:
             part_path = directory / asset_name
             if not part_path.exists():
-                url = f"{BASE}/{asset_name}"
+                url = f"{release_base()}/{asset_name}"
                 print(f"downloading {url}")
                 urllib.request.urlretrieve(url, part_path)
             part_paths.append(part_path)

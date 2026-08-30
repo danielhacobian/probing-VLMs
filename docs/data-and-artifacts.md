@@ -14,8 +14,8 @@ digests, and cache them only for the current runtime.
 
 The notebooks contain the public OSF URLs and expected hashes. Repository-owned
 release URLs are constructed from `PROBING_VLMS_RELEASE_BASE`. The setup cells
-provide a working public default, while an anonymous mirror can override the
-variable and host the same verified assets.
+default to this repository's GitHub Releases, so no external configuration is
+needed. The variable remains overridable for development forks.
 The original OSF record does not state a separate dataset license, so the
 repository does not relicense the trajectories.
 

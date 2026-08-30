@@ -44,10 +44,8 @@ objects. Every downloaded checkpoint, dataset, and activation cache is checked
 against a recorded SHA-256 digest. Each notebook defines
 `PROBING_VLMS_REPO_URL` and `PROBING_VLMS_RELEASE_BASE` with working public
 defaults, so a fresh Colab runtime needs no environment setup. The variables
-can still be set before the setup cell to use a repository mirror. See
-[Data and artifacts](docs/data-and-artifacts.md).
-For double-blind distribution, also follow the
-[anonymous release checklist](docs/anonymous-release.md).
+can still be overridden for development, but normal runs use this repository
+and its GitHub Releases directly. See [Data and artifacts](docs/data-and-artifacts.md).
 
 ## Core methodology
 
@@ -70,16 +68,17 @@ bootstrap resamples. See [Methodology](docs/methodology.md).
 ## Local use
 
 ```bash
-git clone --branch initial-release <ANONYMOUS_REPOSITORY_URL> probing-VLMs
+git clone --branch initial-release https://github.com/danielhacobian/probing-VLMs.git
 cd probing-VLMs
 python -m pip install -r requirements.txt
 ```
 
-Optional repository-mirror override:
+No repository environment variables are required. Optional development
+overrides are supported:
 
 ```bash
-export PROBING_VLMS_REPO_URL=<ANONYMOUS_REPOSITORY_URL>
-export PROBING_VLMS_RELEASE_BASE=<ANONYMOUS_RELEASE_DOWNLOAD_BASE>
+export PROBING_VLMS_REPO_URL=https://github.com/danielhacobian/probing-VLMs.git
+export PROBING_VLMS_RELEASE_BASE=https://github.com/danielhacobian/probing-VLMs/releases/download
 ```
 
 Checkpoint restoration is normally handled by the notebooks. It can also be

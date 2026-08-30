@@ -17,15 +17,11 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RELEASE_BASE = os.environ.get("PROBING_VLMS_RELEASE_BASE", "").rstrip("/")
+DEFAULT_RELEASE_BASE = "https://github.com/danielhacobian/probing-VLMs/releases/download"
+RELEASE_BASE = os.environ.get("PROBING_VLMS_RELEASE_BASE", DEFAULT_RELEASE_BASE).rstrip("/")
 
 
 def release_base() -> str:
-    if not RELEASE_BASE:
-        raise RuntimeError(
-            "Set PROBING_VLMS_RELEASE_BASE to the anonymous repository's "
-            "release-download base URL before restoring checkpoints."
-        )
     return f"{RELEASE_BASE}/probe-checkpoints-v1"
 
 ASSETS = {

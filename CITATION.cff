@@ -3,6 +3,7 @@ title: Probing Physical Variables in Visual World Models
 message: If you use these notebooks or probe utilities, please cite this repository.
 type: software
 authors:
-  - name: Anonymous Authors
+  - family-names: Hacobian
+    given-names: Daniel
 license: MIT
 date-released: 2026-08-27

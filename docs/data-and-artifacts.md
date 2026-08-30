@@ -12,12 +12,9 @@ digests, and cache them only for the current runtime.
 | Wall | `wall-probe-data-v1` release in this repository | 1,920 complete trajectories; copied from the public DINO-WM data export |
 | PushT | Original DINO-WM OSF archive | 18,500 selected from 18,706 available trajectories when recomputing activations |
 
-The notebooks contain the public OSF URLs and expected hashes. Repository-owned
-release URLs are constructed from `PROBING_VLMS_RELEASE_BASE`. The setup cells
-default to this repository's GitHub Releases, so no external configuration is
-needed. The variable remains overridable for development forks.
-The original OSF record does not state a separate dataset license, so the
-repository does not relicense the trajectories.
+The notebooks contain the exact source URLs and expected hashes. The original
+OSF record does not state a separate dataset license, so the repository does
+not relicense the trajectories.
 
 ## Repository-owned releases
 

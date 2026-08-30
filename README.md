@@ -16,9 +16,9 @@ model uses that variable.
 
 | Environment | Demo | Coverage |
 |---|---|---|
-| UMaze | [Notebook](notebooks/umaze_layerwise_motion_probe_paper_lr.ipynb) | 2,000 unique trajectories |
-| Wall | [Notebook](notebooks/wall_layerwise_motion_probe_walkthrough_standalone.ipynb) | 1,920 unique trajectories |
-| PushT | [Notebook](notebooks/pusht_layerwise_motion_probe_walkthrough_standalone.ipynb) | 18,500 unique trajectories |
+| UMaze | [Open in Colab](https://colab.research.google.com/github/danielhacobian/probing-VLMs/blob/initial-release/notebooks/umaze_layerwise_motion_probe_paper_lr.ipynb) | 2,000 unique trajectories |
+| Wall | [Open in Colab](https://colab.research.google.com/github/danielhacobian/probing-VLMs/blob/initial-release/notebooks/wall_layerwise_motion_probe_walkthrough_standalone.ipynb) | 1,920 unique trajectories |
+| PushT | [Open in Colab](https://colab.research.google.com/github/danielhacobian/probing-VLMs/blob/initial-release/notebooks/pusht_layerwise_motion_probe_walkthrough_standalone.ipynb) | 18,500 unique trajectories |
 
 The notebooks are the main demos and include explanations, activation
 extraction, probe fitting, controls, uncertainty estimates, and plots. They
@@ -39,13 +39,9 @@ docs/                      Method and data documentation
 tests/                     CPU-only tests for probe construction and assets
 ```
 
-Large files are intentionally stored as release assets rather than Git
+Large files are intentionally stored as GitHub Release assets rather than Git
 objects. Every downloaded checkpoint, dataset, and activation cache is checked
-against a recorded SHA-256 digest. Each notebook defines
-`PROBING_VLMS_REPO_URL` and `PROBING_VLMS_RELEASE_BASE` with working public
-defaults, so a fresh Colab runtime needs no environment setup. The variables
-can still be overridden for development, but normal runs use this repository
-and its GitHub Releases directly. See [Data and artifacts](docs/data-and-artifacts.md).
+against a recorded SHA-256 digest. See [Data and artifacts](docs/data-and-artifacts.md).
 
 ## Core methodology
 
@@ -59,11 +55,9 @@ For a representation at layer `l`:
 - PushT orientation uses `(cos(theta), sin(theta))` to avoid an angle wrap.
 
 Each representation is standardized using training statistics only. Ridge
-regression uses `lambda=10`. Complete trajectories are divided into 60%
-training, 20% validation, and 20% locked test partitions. Representation
-selection uses validation only; final evaluation uses the test partition once.
-All plotted and headline uncertainty intervals use 1,000 complete-trajectory
-bootstrap resamples. See [Methodology](docs/methodology.md).
+regression uses `lambda=10`. Evaluation includes episode holdouts, buffered
+spatial holdouts, shuffled labels, position-only controls, position-residualized
+targets, and bootstrap intervals. See [Methodology](docs/methodology.md).
 
 ## Local use
 
@@ -71,14 +65,6 @@ bootstrap resamples. See [Methodology](docs/methodology.md).
 git clone --branch initial-release https://github.com/danielhacobian/probing-VLMs.git
 cd probing-VLMs
 python -m pip install -r requirements.txt
-```
-
-No repository environment variables are required. Optional development
-overrides are supported:
-
-```bash
-export PROBING_VLMS_REPO_URL=https://github.com/danielhacobian/probing-VLMs.git
-export PROBING_VLMS_RELEASE_BASE=https://github.com/danielhacobian/probing-VLMs/releases/download
 ```
 
 Checkpoint restoration is normally handled by the notebooks. It can also be
@@ -90,24 +76,6 @@ python scripts/fetch_probe_assets.py wall
 ```
 
 These commands download only from `probing-VLMs` releases.
-
-## Result exports
-
-Each notebook writes `validation_selection_scores.csv`,
-`headline_selected_test_metrics.csv`,
-`headline_straightening_deltas.csv`, and `headline_protocol.json`. After
-running all three notebooks, combine their exports with:
-
-```bash
-python scripts/collect_headline_exports.py \
-  --umaze <UMAZE_OUTPUT_DIR> \
-  --wall <WALL_OUTPUT_DIR> \
-  --pusht <PUSHT_OUTPUT_DIR>
-```
-
-The canonical schemas and protocol manifest are checked into
-[`results/`](results/). The collection script refuses empty input tables so
-unexecuted notebooks cannot be mistaken for reported measurements.
 
 ## Reproducibility notes
 

@@ -1,1 +1,0 @@
-environment,model_seed,family,variable,off_representation,off_mode,on_representation,on_mode,off_r2,off_r2_ci_low,off_r2_ci_high,on_r2,on_r2_ci_low,on_r2_ci_high,on_minus_off_r2,on_minus_off_r2_ci_low,on_minus_off_r2_ci_high,bootstrap_unit,interval

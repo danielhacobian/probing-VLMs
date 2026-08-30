@@ -192,8 +192,9 @@ def episode_group_train_val_test_split(
     """Make disjoint train/validation/test partitions of complete trajectories.
 
     The permutation is deterministic. Validation episodes are taken first and
-    test episodes second. No episode can appear in more than one partition,
-    even when there are multiple windows per episode.
+    test episodes second, so the validation partition matches the historical
+    80/20 episode holdout when both fractions are 0.2. No episode can appear in
+    more than one partition, even when there are multiple windows per episode.
     """
     choices = np.asarray(choices, dtype=np.int64)
     if choices.ndim != 2 or choices.shape[1] < 1:

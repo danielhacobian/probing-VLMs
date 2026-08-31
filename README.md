@@ -20,6 +20,8 @@ model uses that variable.
 | Wall | [Open Notebook](https://github.com/danielhacobian/probing-VLMs/blob/initial-release/notebooks/wall_layerwise_motion_probe_walkthrough_standalone.ipynb) | 1,920 unique trajectories |
 | PushT | [Open Notebook](https://github.com/danielhacobian/probing-VLMs/blob/initial-release/notebooks/pusht_layerwise_motion_probe_walkthrough_standalone.ipynb) | 18,500 unique trajectories |
 
+*Notebooks will not currently run since they have been anonymized for submission to workshops
+
 The notebooks are the main demos and include explanations, activation
 extraction, probe fitting, controls, uncertainty estimates, and plots. They
 clone this repository and download verified assets from releases owned by this

@@ -90,6 +90,10 @@ def collect_activations(
     nframes,
     device,
     include_kinds=None,
+    *,
+    batch_loader=load_batch,
+    stream_encoder=encode_stream,
+    antialias=False,
 ):
     """Collect intermediate representations for a set of trajectory windows.
 
@@ -98,6 +102,8 @@ def collect_activations(
     "pooled_visual"}``.  The default keeps the original all-representations
     behavior.  The filter is useful for walkthroughs because retaining every
     individual patch at every layer can require several gigabytes.
+    Matched checkpoints supply a complete-action batch loader and strict stream
+    encoder. The defaults retain the original extraction protocol.
     """
     encoder = modules["encoder"]
     predictor = modules["predictor"]
@@ -117,7 +123,7 @@ def collect_activations(
     with torch.inference_mode():
         for start in range(0, len(choices), batch_size):
             batch_choices = choices[start : start + batch_size]
-            visual, proprio, action, state = load_batch(
+            visual, proprio, action, state = batch_loader(
                 dataset, batch_choices, frameskip, nframes
             )
             b, t = visual.shape[:2]
@@ -129,6 +135,7 @@ def collect_activations(
                     size=(encoder_input_size, encoder_input_size),
                     mode="bilinear",
                     align_corners=False,
+                    antialias=antialias,
                 )
             layer_outputs = encoder.forward_intermediates(flat)
             for output in layer_outputs:
@@ -167,10 +174,10 @@ def collect_activations(
             # Predictor activations use the exact final encoder representation
             # and normalized action/proprio streams used during training.
             visual_tokens = encoder(flat).reshape(b, t, -1, visual_dim)
-            prop_emb = encode_stream(
+            prop_emb = stream_encoder(
                 modules["proprio_encoder"], proprio.to(device), "proprio"
             )
-            act_emb = encode_stream(
+            act_emb = stream_encoder(
                 modules["action_encoder"], action.to(device), "action"
             )
             prop_tiled = prop_emb.unsqueeze(2).expand(-1, -1, visual_tokens.shape[2], -1)

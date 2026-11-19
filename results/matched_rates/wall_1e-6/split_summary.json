@@ -1,0 +1,17 @@
+{
+  "source_file_sha256": "4c0c086f82d67c4b2eab8eb280660ff12ef467534a6fbcaa56960b6e9038f0e3",
+  "window_count": 1920,
+  "partition_counts": {
+    "train": 1152,
+    "validation": 384,
+    "test": 384
+  },
+  "partitions_disjoint": true,
+  "partitions_cover_all_windows": true,
+  "canonical_array_sha256": {
+    "choices": "769f505302f48f3bc8b5978e6205e6ba84335e9be1a434a04922e64b0a1f47c5",
+    "episode_train": "82b960318717e29e0dd77d25d1edcbac1c2692530ebca98a4e78531c09d953fd",
+    "episode_validation": "f1210d50584315760163f93a3b527879a3d2aab04f7c74a060cdd3b09caa3d02",
+    "episode_test": "fd955c78987426c8c6033188c3fd275a4f8507202dc2f40cdd1de21914c48f52"
+  }
+}
